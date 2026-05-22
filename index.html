@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>豬朋狗友</title>
+
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --bubble: #eff6ff;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --danger: #dc2626;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 8px;
+    }
+
+    header {
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 7px 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .panel {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .robot-status-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f9fafb;
+      padding: 5px 7px;
+      margin-bottom: 5px;
+    }
+
+    .robot-status-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .robot-status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow-x: auto;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .robot-status-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text);
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    .robot-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--warning);
+      flex: 0 0 auto;
+    }
+
+    .robot-dot.online {
+      background: var(--success);
+    }
+
+    .robot-dot.offline {
+      background: var(--danger);
+    }
+
+    .robot-status-detail {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .robot-test-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: 0 0 auto;
+    }
+
+    .robot-test-actions button,
+    .message-tools button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 4px 7px;
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .chat-window {
+      height: 73vh;
+      min-height: 620px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f9fafb;
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+
+    .empty-chat {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .message-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 8px;
+      margin-bottom: 7px;
+      box-shadow: 0 2px 7px rgba(15, 23, 42, 0.03);
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .message-id {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .message-time {
+      color: var(--muted);
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .message-text {
+      background: var(--bubble);
+      border: 1px solid #bfdbfe;
+      border-radius: 9px;
+      padding: 6px 8px;
+      line-height: 1.42;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .message-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      max-width: 100%;
+      line-height: 1.4;
+      flex: 0 1 auto;
+    }
+
+    .status-waiting {
+      background: var(--warning);
+    }
+
+    .status-done {
+      background: var(--success);
+    }
+
+    .status-error {
+      background: var(--danger);
+    }
+
+    .message-tools {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+      flex: 0 0 auto;
+    }
+
+    .chat-input-area {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    .input-button-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      justify-content: flex-start;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      max-height: 240px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 7px 8px;
+      font-size: 13px;
+      line-height: 1.42;
+      resize: vertical;
+      outline: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    button.action {
+      border: 0;
+      border-radius: 9px;
+      padding: 8px 11px;
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    .empty-box {
+      min-height: 660px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      background: #f9fafb;
+      text-align: center;
+      line-height: 1.6;
+      padding: 20px;
+      font-size: 13px;
+    }
+
+    .status {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 6px;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      .tabs {
+        grid-template-columns: 1fr;
+        margin: 6px 0;
+      }
+
+      .robot-status-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .robot-status-line {
+        white-space: normal;
+        flex-wrap: wrap;
+      }
+
+      .chat-window {
+        height: 68vh;
+        min-height: 500px;
+      }
+
+      .chat-input-area {
+        grid-template-columns: 1fr;
+      }
+
+      .input-button-stack {
+        flex-direction: row;
+        justify-content: flex-end;
+      }
+
+      .message-header {
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .message-time {
+        text-align: left;
+      }
+
+      .message-status-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .message-tools {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <h1>豬朋狗友</h1>
+    </header>
+
+    <nav class="tabs" aria-label="页面分页">
+      <button class="tab-btn active" data-tab="page1">下发</button>
+      <button class="tab-btn" data-tab="page2">敬请期待</button>
+      <button class="tab-btn" data-tab="page3">敬请期待</button>
+    </nav>
+
+    <section id="tab-page1" class="panel active">
+      <div class="robot-status-card">
+        <div class="robot-status-toolbar">
+          <div class="robot-status-line">
+            <span class="robot-status-main">
+              <span id="robotStatusDot" class="robot-dot offline"></span>
+              <span id="robotStatusText">机器人状态：离线</span>
+            </span>
+
+            <span id="robotStatusDetail" class="robot-status-detail">
+              目前尚未连接云端机器人状态接口。
+            </span>
+          </div>
+
+          <div class="robot-test-actions">
+            <button onclick="simulateRobotOnline()">测试：机器人上线</button>
+            <button onclick="simulateRobotOffline()">测试：机器人离线</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="chatWindow" class="chat-window" aria-label="对话内容显示区"></div>
+
+      <div class="chat-input-area">
+        <textarea
+          id="messageInput"
+          placeholder="请输入对话内容，例如：LF JJ抖音-jjxy 转1A EW JJ抖音-jjxt"
+        ></textarea>
+
+        <div class="input-button-stack">
+          <button class="action danger" onclick="clearMessages()">清空对话</button>
+          <button class="action" onclick="sendMessage()">送出</button>
+        </div>
+      </div>
+
+      <div class="status" id="page1Status"></div>
+    </section>
+
+    <section id="tab-page2" class="panel">
+      <div class="empty-box">
+        敬请期待
+      </div>
+    </section>
+
+    <section id="tab-page3" class="panel">
+      <div class="empty-box">
+        敬请期待
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const messageStorageKey = "threePageWebsite.chatMessages.v4";
+    const robotStatusStorageKey = "threePageWebsite.robotStatus.demo.v1";
+
+    // 之后有云端 API 时，把下面网址改成你的机器人状态 API。
+    // 例如：https://你的网域.com/api/robot-status
+    const ROBOT_STATUS_API_URL = "";
+
+    // 之后有云端 API 时，把下面网址改成你的讯息 API。
+    // 例如：https://你的网域.com/api/messages
+    const MESSAGES_API_URL = "";
+
+    // 超过这个秒数没更新，就视为机器人离线。
+    const ROBOT_OFFLINE_SECONDS = 15;
+
+    let messages = [];
+
+    const statusTextMap = {
+      waiting: "等待中",
+      done: "作帐完成",
+      error: "发生错误"
+    };
+
+    document.querySelectorAll(".tab-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const tab = button.dataset.tab;
+
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+
+        document.querySelectorAll(".panel").forEach((panel) => {
+          panel.classList.remove("active");
+        });
+
+        button.classList.add("active");
+        document.getElementById(`tab-${tab}`).classList.add("active");
+      });
+    });
+
+    document.getElementById("messageInput").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    async function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+
+      if (!text) {
+        showStatus("请输入内容后再送出。");
+        return;
+      }
+
+      const message = {
+        id: createMessageId(),
+        text: text,
+        status: "waiting",
+        createdAt: Date.now(),
+        completedAt: null,
+        errorMessage: ""
+      };
+
+      messages.push(message);
+      input.value = "";
+
+      await saveMessages();
+      renderMessages();
+
+      showStatus("已新增讯息，状态：等待中。");
+    }
+
+    async function saveMessages() {
+      if (MESSAGES_API_URL) {
+        // 未来接云端 API 时，可在这里改成 POST / PUT 到服务器。
+        // 目前先使用 localStorage 保存。
+      }
+
+      localStorage.setItem(messageStorageKey, JSON.stringify(messages));
+    }
+
+    async function loadMessages() {
+      if (MESSAGES_API_URL) {
+        // 未来接云端 API 时，可在这里改成 fetch(MESSAGES_API_URL) 读取服务器资料。
+        // 目前先使用 localStorage 读取。
+      }
+
+      const raw = localStorage.getItem(messageStorageKey);
+
+      if (!raw) {
+        messages = [];
+        renderMessages();
+        return;
+      }
+
+      try {
+        messages = JSON.parse(raw);
+      } catch (error) {
+        messages = [];
+      }
+
+      renderMessages();
+    }
+
+    function renderMessages() {
+      const chatWindow = document.getElementById("chatWindow");
+      chatWindow.innerHTML = "";
+
+      if (messages.length === 0) {
+        chatWindow.innerHTML = `
+          <div class="empty-chat">
+            目前没有对话内容<br />
+            请在下方输入后按送出
+          </div>
+        `;
+        return;
+      }
+
+      messages.forEach((message) => {
+        const card = document.createElement("div");
+        card.className = "message-card";
+        card.dataset.messageId = message.id;
+
+        const header = document.createElement("div");
+        header.className = "message-header";
+
+        const id = document.createElement("div");
+        id.className = "message-id";
+        id.textContent = `ID：${message.id}`;
+
+        const time = document.createElement("div");
+        time.className = "message-time";
+        time.textContent = `建立时间：${formatTime(message.createdAt)}`;
+
+        header.appendChild(id);
+        header.appendChild(time);
+
+        const text = document.createElement("div");
+        text.className = "message-text";
+        text.textContent = message.text;
+
+        const badge = document.createElement("div");
+        badge.className = `status-badge status-${message.status}`;
+
+        if (message.status === "done" && message.completedAt) {
+          badge.textContent = `${statusTextMap[message.status]}：${formatTime(message.completedAt)}`;
+        } else if (message.status === "error") {
+          badge.textContent = `${statusTextMap[message.status]}：${message.errorMessage || "未提供错误原因"}`;
+        } else {
+          badge.textContent = statusTextMap[message.status] || message.status;
+        }
+
+        const statusRow = document.createElement("div");
+        statusRow.className = "message-status-row";
+
+        const tools = buildMessageTools(message);
+        statusRow.appendChild(badge);
+        statusRow.appendChild(tools);
+
+        card.appendChild(header);
+        card.appendChild(text);
+        card.appendChild(statusRow);
+
+        chatWindow.appendChild(card);
+      });
+
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function buildMessageTools(message) {
+      const tools = document.createElement("div");
+      tools.className = "message-tools";
+
+      const doneButton = document.createElement("button");
+      doneButton.textContent = "测试：作帐完成";
+      doneButton.onclick = () => simulateMessageDone(message.id);
+
+      const errorButton = document.createElement("button");
+      errorButton.textContent = "测试：发生错误";
+      errorButton.onclick = () => simulateMessageError(message.id);
+
+      tools.appendChild(doneButton);
+      tools.appendChild(errorButton);
+
+      return tools;
+    }
+
+    async function updateMessage(id, patch) {
+      const index = messages.findIndex((message) => message.id === id);
+
+      if (index === -1) {
+        return;
+      }
+
+      messages[index] = {
+        ...messages[index],
+        ...patch
+      };
+
+      await saveMessages();
+      renderMessages();
+    }
+
+    function simulateMessageDone(id) {
+      updateMessage(id, {
+        status: "done",
+        completedAt: Date.now(),
+        errorMessage: ""
+      });
+    }
+
+    function simulateMessageError(id) {
+      updateMessage(id, {
+        status: "error",
+        completedAt: Date.now(),
+        errorMessage: "测试错误：机器人处理失败。"
+      });
+    }
+
+    function clearMessages() {
+      if (!confirm("确定要清空全部对话吗？\n\n清空后目前浏览器保存的对话内容会被删除。")) {
+        return;
+      }
+
+      messages = [];
+      saveMessages();
+      renderMessages();
+      showStatus("已清空对话。");
+    }
+
+    function showStatus(message) {
+      const status = document.getElementById("page1Status");
+      status.textContent = message;
+
+      setTimeout(() => {
+        status.textContent = "";
+      }, 3500);
+    }
+
+    function setRobotStatus(statusData) {
+      const dot = document.getElementById("robotStatusDot");
+      const text = document.getElementById("robotStatusText");
+      const detail = document.getElementById("robotStatusDetail");
+
+      dot.classList.remove("online", "offline");
+
+      const now = Date.now();
+      const lastHeartbeat = statusData.lastHeartbeat || 0;
+      const secondsSinceHeartbeat = Math.floor((now - lastHeartbeat) / 1000);
+      const isFresh = secondsSinceHeartbeat <= ROBOT_OFFLINE_SECONDS;
+
+      if (statusData.online === true && isFresh) {
+        dot.classList.add("online");
+        text.textContent = "机器人状态：在线";
+        detail.textContent = `目前状态：${statusData.status || "待命中"}｜最后回报：${formatTime(lastHeartbeat)}`;
+        return;
+      }
+
+      dot.classList.add("offline");
+      text.textContent = "机器人状态：离线";
+
+      if (lastHeartbeat) {
+        detail.textContent = `超过 ${ROBOT_OFFLINE_SECONDS} 秒没有收到机器人回报，最后回报：${formatTime(lastHeartbeat)}`;
+      } else {
+        detail.textContent = statusData.status || "尚未收到机器人上线回报。";
+      }
+    }
+
+    async function checkRobotStatus() {
+      if (ROBOT_STATUS_API_URL) {
+        try {
+          const response = await fetch(ROBOT_STATUS_API_URL, {
+            cache: "no-store"
+          });
+
+          if (!response.ok) {
+            throw new Error("状态接口无回应");
+          }
+
+          const statusData = await response.json();
+          setRobotStatus(statusData);
+          return;
+        } catch (error) {
+          setRobotStatus({
+            online: false,
+            status: "无法连接云端机器人状态接口。",
+            lastHeartbeat: 0
+          });
+          return;
+        }
+      }
+
+      const demoRaw = localStorage.getItem(robotStatusStorageKey);
+
+      if (!demoRaw) {
+        setRobotStatus({
+          online: false,
+          status: "目前尚未设定云端状态接口；此处先显示离线。",
+          lastHeartbeat: 0
+        });
+        return;
+      }
+
+      try {
+        setRobotStatus(JSON.parse(demoRaw));
+      } catch (error) {
+        setRobotStatus({
+          online: false,
+          status: "状态资料格式错误。",
+          lastHeartbeat: 0
+        });
+      }
+    }
+
+    function simulateRobotOnline() {
+      const data = {
+        online: true,
+        status: "待命中，等待读取讯息",
+        lastHeartbeat: Date.now()
+      };
+
+      localStorage.setItem(robotStatusStorageKey, JSON.stringify(data));
+      setRobotStatus(data);
+    }
+
+    function simulateRobotOffline() {
+      const data = {
+        online: false,
+        status: "机器人已离线",
+        lastHeartbeat: 0
+      };
+
+      localStorage.setItem(robotStatusStorageKey, JSON.stringify(data));
+      setRobotStatus(data);
+    }
+
+    function createMessageId() {
+      if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+
+      return "msg_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+    }
+
+    function formatTime(timestamp) {
+      if (!timestamp) {
+        return "无";
+      }
+
+      return new Date(timestamp).toLocaleString();
+    }
+
+    loadMessages();
+    checkRobotStatus();
+
+    setInterval(checkRobotStatus, 3000);
+    setInterval(loadMessages, 5000);
+  </script>
+</body>
+</html>
