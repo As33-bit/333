@@ -618,8 +618,11 @@
         const badge = document.createElement("div");
         badge.className = `status-badge status-${message.status}`;
 
-        if (message.status === "done" && message.completedAt) {
-          badge.textContent = `${statusTextMap[message.status]}：${formatTime(message.completedAt)}`;
+        if (message.status === "done") {
+          const shortSummary = getShortSummary(message.errorMessage);
+          badge.textContent = shortSummary
+            ? `作帐完成：${shortSummary}`
+            : `作帐完成：${formatTime(message.completedAt)}`;
         } else if (message.status === "error") {
           badge.textContent = `${statusTextMap[message.status]}：${message.errorMessage || "未提供错误原因"}`;
         } else {
@@ -686,7 +689,7 @@
       updateMessage(id, {
         status: "done",
         completedAt: Date.now(),
-        errorMessage: ""
+        errorMessage: "共拆解 1 笔资料"
       });
     }
 
@@ -844,6 +847,16 @@
       }
 
       return new Date(timestamp).toLocaleString();
+    }
+
+    function getShortSummary(summaryText) {
+      if (!summaryText) {
+        return "";
+      }
+
+      const firstLine = summaryText.split("\n")[0].trim();
+
+      return firstLine || "";
     }
 
     function getSupabaseHeaders(options = {}) {
