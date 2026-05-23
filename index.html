@@ -467,18 +467,17 @@
   </main>
 
   <script>
-    const messageStorageKey = "threePageWebsite.chatMessages.v4";
     const robotStatusStorageKey = "threePageWebsite.robotStatus.demo.v1";
 
-    // 之后有云端 API 时，把下面网址改成你的机器人状态 API。
-    // 例如：https://你的网域.com/api/robot-status
+    const SUPABASE_URL = "https://pqraknjtxyruvswgrlwg.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_FcGKft63Ke2d0pnaXSoS7Q_4W1chpvp";
+    const MESSAGES_API_URL = `${SUPABASE_URL}/rest/v1/messages`;
+
+    // 之後有正式機器人狀態 API 時，把下面網址改成你的機器人狀態 API。
+    // 例如：https://你的網域.com/api/robot-status
     const ROBOT_STATUS_API_URL = "";
 
-    // 之后有云端 API 时，把下面网址改成你的讯息 API。
-    // 例如：https://你的网域.com/api/messages
-    const MESSAGES_API_URL = "";
-
-    // 超过这个秒数没更新，就视为机器人离线。
+    // 超過這個秒數沒更新，就視為機器人離線。
     const ROBOT_OFFLINE_SECONDS = 15;
 
     let messages = [];
@@ -531,45 +530,52 @@
         errorMessage: ""
       };
 
-      messages.push(message);
       input.value = "";
 
-      await saveMessages();
-      renderMessages();
-
-      showStatus("已新增讯息，状态：等待中。");
+      try {
+        await saveMessageToServer(message);
+        await loadMessages();
+        showStatus("已新增讯息，状态：等待中。");
+      } catch (error) {
+        console.error(error);
+        showStatus("新增失败，请检查 Supabase 连线。", 5000);
+      }
     }
 
-    async function saveMessages() {
-      if (MESSAGES_API_URL) {
-        // 未来接云端 API 时，可在这里改成 POST / PUT 到服务器。
-        // 目前先使用 localStorage 保存。
-      }
+    async function saveMessageToServer(message) {
+      const response = await fetch(MESSAGES_API_URL, {
+        method: "POST",
+        headers: getSupabaseHeaders({ preferReturn: true }),
+        body: JSON.stringify(toDatabaseMessage(message))
+      });
 
-      localStorage.setItem(messageStorageKey, JSON.stringify(messages));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(errorText);
+        throw new Error("新增讯息到 Supabase 失败");
+      }
     }
 
     async function loadMessages() {
-      if (MESSAGES_API_URL) {
-        // 未来接云端 API 时，可在这里改成 fetch(MESSAGES_API_URL) 读取服务器资料。
-        // 目前先使用 localStorage 读取。
-      }
-
-      const raw = localStorage.getItem(messageStorageKey);
-
-      if (!raw) {
-        messages = [];
-        renderMessages();
-        return;
-      }
-
       try {
-        messages = JSON.parse(raw);
-      } catch (error) {
-        messages = [];
-      }
+        const response = await fetch(`${MESSAGES_API_URL}?select=*&order=created_at.asc`, {
+          method: "GET",
+          headers: getSupabaseHeaders()
+        });
 
-      renderMessages();
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("读取 Supabase 讯息失败");
+        }
+
+        const rows = await response.json();
+        messages = rows.map(fromDatabaseMessage);
+        renderMessages();
+      } catch (error) {
+        console.error(error);
+        showStatus("无法读取云端资料，请检查 Supabase 设定。", 5000);
+      }
     }
 
     function renderMessages() {
@@ -656,19 +662,24 @@
     }
 
     async function updateMessage(id, patch) {
-      const index = messages.findIndex((message) => message.id === id);
+      try {
+        const response = await fetch(`${MESSAGES_API_URL}?id=eq.${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: getSupabaseHeaders({ preferReturn: true }),
+          body: JSON.stringify(toDatabasePatch(patch))
+        });
 
-      if (index === -1) {
-        return;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("更新 Supabase 讯息失败");
+        }
+
+        await loadMessages();
+      } catch (error) {
+        console.error(error);
+        showStatus("更新失败，请检查 Supabase 连线。", 5000);
       }
-
-      messages[index] = {
-        ...messages[index],
-        ...patch
-      };
-
-      await saveMessages();
-      renderMessages();
     }
 
     function simulateMessageDone(id) {
@@ -687,24 +698,39 @@
       });
     }
 
-    function clearMessages() {
-      if (!confirm("确定要清空全部对话吗？\n\n清空后目前浏览器保存的对话内容会被删除。")) {
+    async function clearMessages() {
+      if (!confirm("确定要清空全部对话吗？\n\n清空后 Supabase 云端资料也会被删除。")) {
         return;
       }
 
-      messages = [];
-      saveMessages();
-      renderMessages();
-      showStatus("已清空对话。");
+      try {
+        const response = await fetch(`${MESSAGES_API_URL}?id=not.is.null`, {
+          method: "DELETE",
+          headers: getSupabaseHeaders()
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("清空 Supabase 讯息失败");
+        }
+
+        messages = [];
+        renderMessages();
+        showStatus("已清空对话。");
+      } catch (error) {
+        console.error(error);
+        showStatus("清空失败，请检查 Supabase 连线。", 5000);
+      }
     }
 
-    function showStatus(message) {
+    function showStatus(message, duration = 3500) {
       const status = document.getElementById("page1Status");
       status.textContent = message;
 
       setTimeout(() => {
         status.textContent = "";
-      }, 3500);
+      }, duration);
     }
 
     function setRobotStatus(statusData) {
@@ -818,6 +844,60 @@
       }
 
       return new Date(timestamp).toLocaleString();
+    }
+
+    function getSupabaseHeaders(options = {}) {
+      const headers = {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json"
+      };
+
+      if (options.preferReturn) {
+        headers.Prefer = "return=representation";
+      }
+
+      return headers;
+    }
+
+    function toDatabaseMessage(message) {
+      return {
+        id: message.id,
+        text: message.text,
+        status: message.status,
+        created_at: message.createdAt,
+        completed_at: message.completedAt,
+        error_message: message.errorMessage || ""
+      };
+    }
+
+    function fromDatabaseMessage(row) {
+      return {
+        id: row.id,
+        text: row.text,
+        status: row.status,
+        createdAt: row.created_at,
+        completedAt: row.completed_at,
+        errorMessage: row.error_message || ""
+      };
+    }
+
+    function toDatabasePatch(patch) {
+      const data = {};
+
+      if (patch.status !== undefined) {
+        data.status = patch.status;
+      }
+
+      if (patch.completedAt !== undefined) {
+        data.completed_at = patch.completedAt;
+      }
+
+      if (patch.errorMessage !== undefined) {
+        data.error_message = patch.errorMessage;
+      }
+
+      return data;
     }
 
     loadMessages();
