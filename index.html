@@ -144,19 +144,10 @@
       color: var(--muted);
       font-size: 12px;
     }
-    .message-tools button {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      padding: 4px 7px;
-      cursor: pointer;
-      font-size: 11px;
-      white-space: nowrap;
-    }
 
     .chat-window {
-      height: 70vh;
-      min-height: 560px;
+      height: 73vh;
+      min-height: 620px;
       overflow-y: auto;
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -248,6 +239,7 @@
     .status-error {
       background: var(--danger);
     }
+
     .chat-input-area {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -288,8 +280,6 @@
       margin-top: 8px;
     }
 
-    
-
     button.action {
       border: 0;
       border-radius: 9px;
@@ -306,7 +296,7 @@
     }
 
     .empty-box {
-      min-height: 560px;
+      min-height: 660px;
       border: 1px dashed #cbd5e1;
       border-radius: 10px;
       display: flex;
@@ -352,8 +342,8 @@
       }
 
       .chat-window {
-        height: 54vh;
-        min-height: 360px;
+        height: 68vh;
+        min-height: 500px;
       }
 
       .chat-input-area {
@@ -372,6 +362,12 @@
 
       .message-time {
         text-align: left;
+      }
+
+      .message-status-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
       }
     }
   </style>
@@ -397,6 +393,7 @@
               <span id="robotStatusDot" class="robot-dot offline"></span>
               <span id="robotStatusText">机器人状态：离线</span>
             </span>
+
             <span id="robotStatusDetail" class="robot-status-detail">
               目前尚未连接云端机器人状态接口。
             </span>
@@ -417,7 +414,6 @@
           <button class="action" onclick="sendMessage()">送出</button>
         </div>
       </div>
-
 
       <div class="status" id="page1Status"></div>
     </section>
@@ -442,11 +438,11 @@
     const SUPABASE_KEY = "sb_publishable_FcGKft63Ke2d0pnaXSoS7Q_4W1chpvp";
     const MESSAGES_API_URL = `${SUPABASE_URL}/rest/v1/messages`;
 
-    // 之后有云端 API 时，把下面网址改成你的机器人状态 API。
-    // 例如：https://你的网域.com/api/robot-status
+    // 之後有正式機器人狀態 API 時，把下面網址改成你的機器人狀態 API。
+    // 例如：https://你的網域.com/api/robot-status
     const ROBOT_STATUS_API_URL = "";
 
-    // 超过这个秒数没更新，就视为机器人离线。
+    // 超過這個秒數沒更新，就視為機器人離線。
     const ROBOT_OFFLINE_SECONDS = 15;
 
     let messages = [];
@@ -499,7 +495,6 @@
         errorMessage: ""
       };
 
-      messages.push(message);
       input.value = "";
 
       try {
@@ -520,6 +515,8 @@
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(errorText);
         throw new Error("新增讯息到 Supabase 失败");
       }
     }
@@ -532,6 +529,8 @@
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
           throw new Error("读取 Supabase 讯息失败");
         }
 
@@ -584,8 +583,11 @@
         const badge = document.createElement("div");
         badge.className = `status-badge status-${message.status}`;
 
-        if (message.status === "done" && message.completedAt) {
-          badge.textContent = `${statusTextMap[message.status]}：${formatTime(message.completedAt)}`;
+        if (message.status === "done") {
+          const shortSummary = getShortSummary(message.errorMessage);
+          badge.textContent = shortSummary
+            ? `作帐完成：${shortSummary}`
+            : `作帐完成：${formatTime(message.completedAt)}`;
         } else if (message.status === "error") {
           badge.textContent = `${statusTextMap[message.status]}：${message.errorMessage || "未提供错误原因"}`;
         } else {
@@ -593,7 +595,9 @@
         }
 
         const statusRow = document.createElement("div");
-        statusRow.className = "message-status-row";        statusRow.appendChild(badge);
+        statusRow.className = "message-status-row";
+
+        statusRow.appendChild(badge);
 
         card.appendChild(header);
         card.appendChild(text);
@@ -604,6 +608,7 @@
 
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
+
     async function updateMessage(id, patch) {
       try {
         const response = await fetch(`${MESSAGES_API_URL}?id=eq.${encodeURIComponent(id)}`, {
@@ -613,6 +618,8 @@
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
           throw new Error("更新 Supabase 讯息失败");
         }
 
@@ -622,10 +629,9 @@
         showStatus("更新失败，请检查 Supabase 连线。", 5000);
       }
     }
-    async function clearMessages() {
-      if (!confirm("确定要清空全部对话吗？
 
-清空后 Supabase 云端资料也会被删除。")) {
+    async function clearMessages() {
+      if (!confirm("确定要清空全部对话吗？\n\n清空后 Supabase 云端资料也会被删除。")) {
         return;
       }
 
@@ -636,6 +642,8 @@
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
           throw new Error("清空 Supabase 讯息失败");
         }
 
@@ -731,6 +739,7 @@
         });
       }
     }
+
     function createMessageId() {
       if (window.crypto && crypto.randomUUID) {
         return crypto.randomUUID();
@@ -745,6 +754,16 @@
       }
 
       return new Date(timestamp).toLocaleString();
+    }
+
+    function getShortSummary(summaryText) {
+      if (!summaryText) {
+        return "";
+      }
+
+      const firstLine = summaryText.split("\n")[0].trim();
+
+      return firstLine || "";
     }
 
     function getSupabaseHeaders(options = {}) {
@@ -786,9 +805,17 @@
     function toDatabasePatch(patch) {
       const data = {};
 
-      if (patch.status !== undefined) data.status = patch.status;
-      if (patch.completedAt !== undefined) data.completed_at = patch.completedAt;
-      if (patch.errorMessage !== undefined) data.error_message = patch.errorMessage;
+      if (patch.status !== undefined) {
+        data.status = patch.status;
+      }
+
+      if (patch.completedAt !== undefined) {
+        data.completed_at = patch.completedAt;
+      }
+
+      if (patch.errorMessage !== undefined) {
+        data.error_message = patch.errorMessage;
+      }
 
       return data;
     }
