@@ -273,13 +273,6 @@
       box-shadow: 0 0 0 3px var(--primary-soft);
     }
 
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
     button.action {
       border: 0;
       border-radius: 9px;
@@ -395,7 +388,7 @@
             </span>
 
             <span id="robotStatusDetail" class="robot-status-detail">
-              目前尚未连接云端机器人状态接口。
+              尚未收到机器人上线回报。
             </span>
           </div>
         </div>
@@ -432,17 +425,13 @@
   </main>
 
   <script>
-    const robotStatusStorageKey = "threePageWebsite.robotStatus.demo.v1";
-
     const SUPABASE_URL = "https://pqraknjtxyruvswgrlwg.supabase.co";
     const SUPABASE_KEY = "sb_publishable_FcGKft63Ke2d0pnaXSoS7Q_4W1chpvp";
+
     const MESSAGES_API_URL = `${SUPABASE_URL}/rest/v1/messages`;
+    const ROBOT_STATUS_API_URL = `${SUPABASE_URL}/rest/v1/robot_status?id=eq.main&select=*`;
 
-    // 之後有正式機器人狀態 API 時，把下面網址改成你的機器人狀態 API。
-    // 例如：https://你的網域.com/api/robot-status
-    const ROBOT_STATUS_API_URL = "";
-
-    // 超過這個秒數沒更新，就視為機器人離線。
+    // 超过这个秒数没更新，就视为机器人离线。
     const ROBOT_OFFLINE_SECONDS = 15;
 
     let messages = [];
@@ -596,7 +585,6 @@
 
         const statusRow = document.createElement("div");
         statusRow.className = "message-status-row";
-
         statusRow.appendChild(badge);
 
         card.appendChild(header);
@@ -607,27 +595,6 @@
       });
 
       chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    async function updateMessage(id, patch) {
-      try {
-        const response = await fetch(`${MESSAGES_API_URL}?id=eq.${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          headers: getSupabaseHeaders({ preferReturn: true }),
-          body: JSON.stringify(toDatabasePatch(patch))
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(errorText);
-          throw new Error("更新 Supabase 讯息失败");
-        }
-
-        await loadMessages();
-      } catch (error) {
-        console.error(error);
-        showStatus("更新失败，请检查 Supabase 连线。", 5000);
-      }
     }
 
     async function clearMessages() {
@@ -656,13 +623,43 @@
       }
     }
 
-    function showStatus(message, duration = 3500) {
-      const status = document.getElementById("page1Status");
-      status.textContent = message;
+    async function checkRobotStatus() {
+      try {
+        const response = await fetch(ROBOT_STATUS_API_URL, {
+          method: "GET",
+          headers: getSupabaseHeaders(),
+          cache: "no-store"
+        });
 
-      setTimeout(() => {
-        status.textContent = "";
-      }, duration);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(errorText);
+          throw new Error("读取机器人状态失败");
+        }
+
+        const rows = await response.json();
+
+        if (!rows || rows.length === 0) {
+          throw new Error("找不到机器人状态资料");
+        }
+
+        const row = rows[0];
+
+        setRobotStatus({
+          online: row.online,
+          status: row.status,
+          lastHeartbeat: row.last_heartbeat
+        });
+
+      } catch (error) {
+        console.error(error);
+
+        setRobotStatus({
+          online: false,
+          status: "无法读取机器人状态。",
+          lastHeartbeat: 0
+        });
+      }
     }
 
     function setRobotStatus(statusData) {
@@ -694,50 +691,13 @@
       }
     }
 
-    async function checkRobotStatus() {
-      if (ROBOT_STATUS_API_URL) {
-        try {
-          const response = await fetch(ROBOT_STATUS_API_URL, {
-            cache: "no-store"
-          });
+    function showStatus(message, duration = 3500) {
+      const status = document.getElementById("page1Status");
+      status.textContent = message;
 
-          if (!response.ok) {
-            throw new Error("状态接口无回应");
-          }
-
-          const statusData = await response.json();
-          setRobotStatus(statusData);
-          return;
-        } catch (error) {
-          setRobotStatus({
-            online: false,
-            status: "无法连接云端机器人状态接口。",
-            lastHeartbeat: 0
-          });
-          return;
-        }
-      }
-
-      const demoRaw = localStorage.getItem(robotStatusStorageKey);
-
-      if (!demoRaw) {
-        setRobotStatus({
-          online: false,
-          status: "目前尚未设定云端状态接口；此处先显示离线。",
-          lastHeartbeat: 0
-        });
-        return;
-      }
-
-      try {
-        setRobotStatus(JSON.parse(demoRaw));
-      } catch (error) {
-        setRobotStatus({
-          online: false,
-          status: "状态资料格式错误。",
-          lastHeartbeat: 0
-        });
-      }
+      setTimeout(() => {
+        status.textContent = "";
+      }, duration);
     }
 
     function createMessageId() {
@@ -800,24 +760,6 @@
         completedAt: row.completed_at,
         errorMessage: row.error_message || ""
       };
-    }
-
-    function toDatabasePatch(patch) {
-      const data = {};
-
-      if (patch.status !== undefined) {
-        data.status = patch.status;
-      }
-
-      if (patch.completedAt !== undefined) {
-        data.completed_at = patch.completedAt;
-      }
-
-      if (patch.errorMessage !== undefined) {
-        data.error_message = patch.errorMessage;
-      }
-
-      return data;
     }
 
     loadMessages();
