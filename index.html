@@ -721,6 +721,29 @@
         return "";
       }
 
+      const lines = summaryText
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      const resultLines = [];
+
+      for (const line of lines) {
+        if (/^第\d+笔\s+/.test(line)) {
+          resultLines.push(line);
+          continue;
+        }
+
+        break;
+      }
+
+      if (resultLines.length > 0) {
+        return resultLines.join("\n");
+      }
+
+      return lines[0] || "";
+    }
+
       const firstLine = summaryText.split("\n")[0].trim();
 
       return firstLine || "";
