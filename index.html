@@ -227,7 +227,6 @@
       line-height: 1.4;
       flex: 0 1 auto;
       white-space: pre-wrap;
-      align-items: flex-start;
     }
 
     .status-waiting {
@@ -440,7 +439,6 @@
 
     const statusTextMap = {
       waiting: "等待中",
-      processing: "处理中",
       done: "作帐完成",
       error: "发生错误"
     };
@@ -725,29 +723,6 @@
       }
 
       const lines = summaryText
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean);
-
-      const resultLines = [];
-
-      for (const line of lines) {
-        if (/^第\d+笔\s+/.test(line)) {
-          resultLines.push(line);
-          continue;
-        }
-
-        break;
-      }
-
-      if (resultLines.length > 0) {
-        return resultLines.join("\n");
-      }
-
-      return lines[0] || "";
-    }
-
-    const lines = summaryText
         .split("\n")
         .map(line => line.trim())
         .filter(Boolean);
