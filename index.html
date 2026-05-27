@@ -226,6 +226,8 @@
       max-width: 100%;
       line-height: 1.4;
       flex: 0 1 auto;
+      white-space: pre-wrap;
+      align-items: flex-start;
     }
 
     .status-waiting {
@@ -373,7 +375,7 @@
     </header>
 
     <nav class="tabs" aria-label="页面分页">
-      <button class="tab-btn active" data-tab="page1">下发</button>
+      <button class="tab-btn active" data-tab="page1">转馀额</button>
       <button class="tab-btn" data-tab="page2">敬请期待</button>
       <button class="tab-btn" data-tab="page3">敬请期待</button>
     </nav>
@@ -399,7 +401,7 @@
       <div class="chat-input-area">
         <textarea
           id="messageInput"
-          placeholder="请输入对话内容，例如：LF JJ抖音-jjxy 转1A EW JJ抖音-jjxt"
+          placeholder="必要有「转」「到」&#10;例一：&#10;A 转 10 到 B&#10;例二：&#10;A 转 10&#10;B 转 10 到 C"
         ></textarea>
 
         <div class="input-button-stack">
@@ -438,6 +440,7 @@
 
     const statusTextMap = {
       waiting: "等待中",
+      processing: "处理中",
       done: "作帐完成",
       error: "发生错误"
     };
@@ -575,8 +578,8 @@
         if (message.status === "done") {
           const shortSummary = getShortSummary(message.errorMessage);
           badge.textContent = shortSummary
-            ? `作帐完成：${shortSummary}`
-            : `作帐完成：${formatTime(message.completedAt)}`;
+            ? `作帐完成：\n${shortSummary}`
+            : `作帐完成：\n${formatTime(message.completedAt)}`;
         } else if (message.status === "error") {
           badge.textContent = `${statusTextMap[message.status]}：${message.errorMessage || "未提供错误原因"}`;
         } else {
@@ -722,6 +725,29 @@
       }
 
       const lines = summaryText
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      const resultLines = [];
+
+      for (const line of lines) {
+        if (/^第\d+笔\s+/.test(line)) {
+          resultLines.push(line);
+          continue;
+        }
+
+        break;
+      }
+
+      if (resultLines.length > 0) {
+        return resultLines.join("\n");
+      }
+
+      return lines[0] || "";
+    }
+
+    const lines = summaryText
         .split("\n")
         .map(line => line.trim())
         .filter(Boolean);
