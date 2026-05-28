@@ -233,6 +233,10 @@
       background: var(--warning);
     }
 
+    .status-processing {
+      background: var(--warning);
+    }
+
     .status-done {
       background: var(--success);
     }
@@ -439,6 +443,7 @@
 
     const statusTextMap = {
       waiting: "等待中",
+      processing: "处理中",
       done: "作帐完成",
       error: "发生错误"
     };
@@ -580,6 +585,8 @@
             : `作帐完成：\n${formatTime(message.completedAt)}`;
         } else if (message.status === "error") {
           badge.textContent = `${statusTextMap[message.status]}：${message.errorMessage || "未提供错误原因"}`;
+        } else if (message.status === "processing") {
+          badge.textContent = message.errorMessage || "处理中";
         } else {
           badge.textContent = statusTextMap[message.status] || message.status;
         }
