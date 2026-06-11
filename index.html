@@ -389,7 +389,7 @@
   </style>
 
   <style id="force-dog-full-width">
-    /* 小狗分頁：上方標題/按鈕維持原本 960px；只有下方商戶框最大化 */
+    /* 小狗分頁：上方標題/按鈕維持原本大小；小狗內容框從左側 97px 開始 */
     body.dog-page-active {
       overflow-x: hidden;
     }
@@ -415,10 +415,14 @@
       width: 100% !important;
     }
 
+    /*
+      小狗下面的內容框不要貼著瀏覽器左邊。
+      框左側固定從 viewport 的 97px 開始，右側延伸到瀏覽器右邊。
+    */
     body.dog-page-active #tab-page2 {
-      width: 100vw !important;
+      width: calc(100vw - 97px) !important;
       max-width: none !important;
-      margin-left: calc((960px - 100vw) / 2) !important;
+      margin-left: calc(97px - ((100vw - 960px) / 2)) !important;
       padding: 0 !important;
       border: 0 !important;
       border-radius: 0 !important;
@@ -427,7 +431,7 @@
     }
 
     body.dog-page-active #page2Frame {
-      width: 100vw !important;
+      width: 100% !important;
       max-width: none !important;
       height: calc(100vh - 92px) !important;
       min-height: 820px !important;
@@ -445,12 +449,12 @@
       }
 
       body.dog-page-active #tab-page2 {
-        width: 100vw !important;
-        margin-left: -6px !important;
+        width: calc(100vw - 12px) !important;
+        margin-left: 6px !important;
       }
 
       body.dog-page-active #page2Frame {
-        width: 100vw !important;
+        width: 100% !important;
         height: calc(100vh - 88px) !important;
         min-height: 680px !important;
       }
@@ -463,7 +467,8 @@
       }
 
       body.dog-page-active #tab-page2 {
-        margin-left: -6px !important;
+        width: calc(100vw - 12px) !important;
+        margin-left: 6px !important;
       }
     }
   </style>
@@ -516,7 +521,7 @@
     </section>
 
     <section id="tab-page2" class="panel">
-      <iframe id="page2Frame" class="page2-iframe" title="小狗" style="width:100vw;max-width:none;height:calc(100vh - 92px);min-height:820px;border:0;border-radius:0;display:block;background:#f4f5f7;"></iframe>
+      <iframe id="page2Frame" class="page2-iframe" title="小狗" style="width:100%;max-width:none;height:calc(100vh - 92px);min-height:820px;border:0;border-radius:0;display:block;background:#f4f5f7;"></iframe>
     </section>
 
     <section id="tab-page3" class="panel">
