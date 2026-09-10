@@ -407,37 +407,7 @@ th{color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
-
-<section id="loginPage" class="login-wrap">
-  <div class="login-card">
-    <div class="brand">
-      <div class="logo">VIA</div>
-      <div class="sub">管理中心</div>
-    </div>
-    <div class="field">
-      <span class="login-field-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="8" r="4"></circle>
-          <path d="M5 19c1.8-3.1 5-4.5 7-4.5s5.2 1.4 7 4.5"></path>
-        </svg>
-      </span>
-      <input id="username" placeholder="帳號" autocomplete="username">
-    </div>
-    <div class="field">
-      <span class="login-field-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <rect x="5" y="11" width="14" height="9" rx="2"></rect>
-          <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
-        </svg>
-      </span>
-      <input id="password" type="password" placeholder="密碼" autocomplete="current-password">
-    </div>
-    <button class="login-btn" onclick="login()">登入 →</button>
-    <div id="loginError" class="login-error"></div>
-  </div>
-</section>
-
-<section id="appPage" class="app hidden">
+<section id="appPage" class="app">
   <aside class="sidebar">
     <div class="side-brand">
       <strong>VIA</strong>
@@ -599,7 +569,6 @@ th{color:var(--muted);font-weight:600}
 </section>
 
 <script>
-const loginPage = document.getElementById('loginPage');
 const appPage = document.getElementById('appPage');
 
 function applySavedTheme(){
@@ -879,10 +848,7 @@ setTimeout(loadFinancePage, 0);
 applySavedTheme();
 initViaCounters();
 renderLastRestartRecord();
-if(true){
-  loginPage.classList.add('hidden');
-  appPage.classList.remove('hidden');
-}
+
 </script>
 </body>
 </html>
