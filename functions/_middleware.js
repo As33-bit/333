@@ -133,45 +133,45 @@ body::before{
 }
 .card{
   position:relative;
-  width:min(92vw,390px);
-  padding:38px 34px 34px;
-  border:1px solid var(--border);
-  border-radius:24px;
-  background:linear-gradient(160deg,rgba(23,49,78,.84),rgba(13,31,52,.70));
+  width:min(92vw,470px);
+  padding:48px 38px 42px;
+  border:1px solid rgba(120,170,225,.28);
+  border-radius:28px;
+  background:linear-gradient(160deg,rgba(22,49,79,.88),rgba(15,37,62,.82));
   box-shadow:
-    0 28px 80px rgba(0,0,0,.34),
-    inset 0 1px 0 rgba(255,255,255,.035);
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
+    0 30px 90px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
 }
 .brand{
   text-align:center;
-  margin-bottom:30px;
+  margin-bottom:34px;
 }
 .logo{
-  font-size:32px;
+  font-size:58px;
   line-height:1;
-  font-weight:800;
-  letter-spacing:.18em;
-  padding-left:.18em;
-  color:#f3f8ff;
-}
-.sub{
-  margin-top:10px;
-  font-size:13px;
+  font-weight:500;
   letter-spacing:.20em;
   padding-left:.20em;
-  color:#8095aa;
+  color:#9bc2ff;
+}
+.sub{
+  margin-top:14px;
+  font-size:14px;
+  letter-spacing:.24em;
+  padding-left:.24em;
+  color:#8ea2b8;
 }
 .field{
   display:flex;
   align-items:center;
   gap:12px;
-  height:50px;
+  height:56px;
   margin-top:14px;
-  padding:0 15px;
-  border:1px solid rgba(151,184,221,.17);
-  border-radius:13px;
+  padding:0 17px;
+  border:1px solid rgba(151,184,221,.20);
+  border-radius:14px;
   background:rgba(255,255,255,.035);
   transition:border-color .18s,background .18s,box-shadow .18s;
 }
@@ -205,22 +205,22 @@ input{
   outline:0;
   background:transparent;
   color:var(--text);
-  font-size:14px;
+  font-size:15px;
 }
 input::placeholder{color:#667b90}
 button{
   width:100%;
-  height:48px;
+  height:54px;
   margin-top:20px;
   border:0;
-  border-radius:13px;
+  border-radius:14px;
   cursor:pointer;
   color:#fff;
   font-size:14px;
   font-weight:700;
   letter-spacing:.04em;
-  background:linear-gradient(135deg,var(--accent),#2868e8);
-  box-shadow:0 12px 28px rgba(32,101,226,.20);
+  background:linear-gradient(100deg,#5d86ff 0%,#5c8dfb 52%,#58d9dc 100%);
+  box-shadow:0 14px 30px rgba(47,111,225,.24);
   transition:transform .16s,filter .16s;
 }
 button:hover{filter:brightness(1.07)}
@@ -248,8 +248,8 @@ h2{
 }
 @media(max-width:520px){
   body{padding:18px}
-  .card{padding:32px 24px 28px;border-radius:20px}
-  .logo{font-size:28px}
+  .card{width:min(94vw,470px);padding:38px 24px 32px;border-radius:22px}
+  .logo{font-size:46px}
 }
 </style>
 </head>
@@ -308,7 +308,7 @@ function loginPage(error) {
       >
     </div>
 
-    <button type="submit">登入</button>
+    <button type="submit">登入 →</button>
   </form>`;
 }
 
