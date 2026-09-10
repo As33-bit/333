@@ -82,7 +82,7 @@ function redirect(location) {
 function html(body, status = 200) {
   return new Response(`<!doctype html><html lang="zh-Hant"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>財務查詢餘額</title>
+<title>豬狗牛馬 研究中心</title>
 <style>
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f5f7;
 font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;color:#222}
@@ -102,7 +102,7 @@ button{width:100%;margin-top:18px;padding:10px;border:0;border-radius:8px;backgr
 }
 
 function loginPage(error) {
-  return `<h1>財務查詢餘額</h1>
+  return `<h1>豬狗牛馬 研究中心</h1>
 ${error ? `<div class="err">${esc(error)}</div>` : ""}
 <form method="POST" action="/login">
 <label>帳號</label><input name="username" autocomplete="username" required autofocus>
