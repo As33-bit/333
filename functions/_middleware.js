@@ -13,7 +13,7 @@ export async function onRequest(context) {
   const ip = request.headers.get("CF-Connecting-IP") || "";
 
   if (!ALLOWED_IPS.has(ip)) {
-    return html(`<h2>此 IP 未授權</h2><p>目前來源 IP：${esc(ip || "無法取得")}</p>`, 403);
+    return html(`<h2>此 IP 未授權</h2><p class="message">目前來源 IP：${esc(ip || "無法取得")}</p>`, 403);
   }
 
   if (!env.LOGIN_USER || !env.LOGIN_PASS || !env.SESSION_SECRET) {
@@ -42,12 +42,15 @@ export async function onRequest(context) {
       const user = String(form.get("username") || "");
       const pass = String(form.get("password") || "");
 
-      if (!(await safeEqual(user, env.LOGIN_USER)) ||
-          !(await safeEqual(pass, env.LOGIN_PASS))) {
+      if (
+        !(await safeEqual(user, env.LOGIN_USER)) ||
+        !(await safeEqual(pass, env.LOGIN_PASS))
+      ) {
         return html(loginPage("帳號或密碼錯誤"), 401);
       }
 
       const token = await makeToken(env.SESSION_SECRET, ip);
+
       return new Response(null, {
         status: 302,
         headers: {
@@ -75,23 +78,185 @@ export async function onRequest(context) {
 function redirect(location) {
   return new Response(null, {
     status: 302,
-    headers: { Location: location, "Cache-Control": "no-store" },
+    headers: {
+      Location: location,
+      "Cache-Control": "no-store",
+    },
   });
 }
 
 function html(body, status = 200) {
-  return new Response(`<!doctype html><html lang="zh-Hant"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>豬狗牛馬 研究中心</title>
+  return new Response(`<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIA｜管理中心</title>
 <style>
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f5f7;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;color:#222}
-.card{width:min(92vw,360px);background:#fff;border:1px solid #ddd;border-radius:14px;padding:24px}
-h1,h2{text-align:center}label{display:block;margin:12px 0 6px;font-weight:700}
-input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:8px}
-button{width:100%;margin-top:18px;padding:10px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700}
-.err{color:#b91c1c;text-align:center;margin-bottom:10px}.note{text-align:center;color:#777;font-size:12px;margin-top:12px}
-</style></head><body><div class="card">${body}</div></body></html>`, {
+:root{
+  color-scheme:dark;
+  --bg:#081526;
+  --bg2:#0e223a;
+  --panel:rgba(17,38,62,.78);
+  --border:rgba(151,184,221,.16);
+  --text:#eef6ff;
+  --muted:#8295aa;
+  --accent:#3c7cff;
+  --accent2:#51b8ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  padding:24px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 22% 18%,rgba(45,104,180,.22),transparent 34%),
+    radial-gradient(circle at 80% 72%,rgba(31,92,165,.13),transparent 38%),
+    linear-gradient(135deg,var(--bg),var(--bg2));
+}
+body::before{
+  content:"";
+  position:fixed;
+  width:460px;
+  height:460px;
+  border-radius:50%;
+  left:-170px;
+  bottom:-240px;
+  background:rgba(50,116,210,.11);
+  filter:blur(18px);
+  pointer-events:none;
+}
+.card{
+  position:relative;
+  width:min(92vw,390px);
+  padding:38px 34px 34px;
+  border:1px solid var(--border);
+  border-radius:24px;
+  background:linear-gradient(160deg,rgba(23,49,78,.84),rgba(13,31,52,.70));
+  box-shadow:
+    0 28px 80px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+}
+.brand{
+  text-align:center;
+  margin-bottom:30px;
+}
+.logo{
+  font-size:32px;
+  line-height:1;
+  font-weight:800;
+  letter-spacing:.18em;
+  padding-left:.18em;
+  color:#f3f8ff;
+}
+.sub{
+  margin-top:10px;
+  font-size:13px;
+  letter-spacing:.20em;
+  padding-left:.20em;
+  color:#8095aa;
+}
+.field{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  height:50px;
+  margin-top:14px;
+  padding:0 15px;
+  border:1px solid rgba(151,184,221,.17);
+  border-radius:13px;
+  background:rgba(255,255,255,.035);
+  transition:border-color .18s,background .18s,box-shadow .18s;
+}
+.field:focus-within{
+  border-color:rgba(79,145,255,.56);
+  background:rgba(255,255,255,.048);
+  box-shadow:0 0 0 3px rgba(60,124,255,.08);
+}
+.icon{
+  width:19px;
+  height:19px;
+  flex:0 0 19px;
+  display:grid;
+  place-items:center;
+  color:#71879d;
+}
+.icon svg{
+  width:19px;
+  height:19px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+input{
+  width:100%;
+  height:100%;
+  padding:0;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  font-size:14px;
+}
+input::placeholder{color:#667b90}
+button{
+  width:100%;
+  height:48px;
+  margin-top:20px;
+  border:0;
+  border-radius:13px;
+  cursor:pointer;
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:.04em;
+  background:linear-gradient(135deg,var(--accent),#2868e8);
+  box-shadow:0 12px 28px rgba(32,101,226,.20);
+  transition:transform .16s,filter .16s;
+}
+button:hover{filter:brightness(1.07)}
+button:active{transform:translateY(1px)}
+.err{
+  margin:0 0 13px;
+  padding:10px 12px;
+  border:1px solid rgba(255,101,101,.22);
+  border-radius:10px;
+  color:#ff9b9b;
+  background:rgba(255,72,72,.07);
+  text-align:center;
+  font-size:13px;
+}
+h2{
+  margin:0 0 12px;
+  text-align:center;
+  font-size:20px;
+}
+.message{
+  margin:0;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+}
+@media(max-width:520px){
+  body{padding:18px}
+  .card{padding:32px 24px 28px;border-radius:20px}
+  .logo{font-size:28px}
+}
+</style>
+</head>
+<body>
+<div class="card">${body}</div>
+</body>
+</html>`, {
     status,
     headers: {
       "Content-Type": "text/html; charset=UTF-8",
@@ -102,45 +267,92 @@ button{width:100%;margin-top:18px;padding:10px;border:0;border-radius:8px;backgr
 }
 
 function loginPage(error) {
-  return `<h1>豬狗牛馬 研究中心</h1>
-${error ? `<div class="err">${esc(error)}</div>` : ""}
-<form method="POST" action="/login">
-<label>帳號</label><input name="username" autocomplete="username" required autofocus>
-<label>密碼</label><input name="password" type="password" autocomplete="current-password" required>
-<button type="submit">登入</button>
-<div class="note">僅限授權 IP 使用</div>
-</form>`;
+  return `
+  <div class="brand">
+    <div class="logo">VIA</div>
+    <div class="sub">管理中心</div>
+  </div>
+
+  ${error ? `<div class="err">${esc(error)}</div>` : ""}
+
+  <form method="POST" action="/login">
+    <div class="field">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M5 19c1.8-3.1 5-4.5 7-4.5s5.2 1.4 7 4.5"></path>
+        </svg>
+      </span>
+      <input
+        name="username"
+        placeholder="帳號"
+        autocomplete="username"
+        required
+        autofocus
+      >
+    </div>
+
+    <div class="field">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+          <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+        </svg>
+      </span>
+      <input
+        name="password"
+        type="password"
+        placeholder="密碼"
+        autocomplete="current-password"
+        required
+      >
+    </div>
+
+    <button type="submit">登入</button>
+  </form>`;
 }
 
 function getCookie(request, name) {
   const raw = request.headers.get("Cookie") || "";
   for (const p of raw.split(";")) {
     const i = p.indexOf("=");
-    if (i > -1 && p.slice(0, i).trim() === name) return p.slice(i + 1).trim();
+    if (i > -1 && p.slice(0, i).trim() === name) {
+      return p.slice(i + 1).trim();
+    }
   }
   return "";
 }
 
 async function makeToken(secret, ip) {
-  const payload = b64(new TextEncoder().encode(JSON.stringify({
-    ip,
-    exp: Math.floor(Date.now() / 1000) + TTL,
-  })));
+  const payload = b64(
+    new TextEncoder().encode(
+      JSON.stringify({
+        ip,
+        exp: Math.floor(Date.now() / 1000) + TTL,
+      })
+    )
+  );
+
   return `${payload}.${await sign(secret, payload)}`;
 }
 
 async function validSession(request, secret, ip) {
   const token = getCookie(request, COOKIE);
   const parts = token.split(".");
-  if (parts.length !== 2) return false;
 
+  if (parts.length !== 2) return false;
   if (!(await safeEqual(parts[1], await sign(secret, parts[0])))) return false;
 
   try {
-    const data = JSON.parse(new TextDecoder().decode(unb64(parts[0])));
-    return data.ip === ip &&
+    const data = JSON.parse(
+      new TextDecoder().decode(unb64(parts[0]))
+    );
+
+    return (
+      data.ip === ip &&
       Number.isFinite(data.exp) &&
-      data.exp > Math.floor(Date.now() / 1000);
+      data.exp > Math.floor(Date.now() / 1000)
+    );
   } catch {
     return false;
   }
@@ -148,42 +360,72 @@ async function validSession(request, secret, ip) {
 
 async function sign(secret, value) {
   const enc = new TextEncoder();
+
   const key = await crypto.subtle.importKey(
-    "raw", enc.encode(secret),
+    "raw",
+    enc.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
-    false, ["sign"]
+    false,
+    ["sign"]
   );
-  return b64(new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(value))));
+
+  return b64(
+    new Uint8Array(
+      await crypto.subtle.sign("HMAC", key, enc.encode(value))
+    )
+  );
 }
 
 async function safeEqual(a, b) {
   const enc = new TextEncoder();
+
   const [aa, bb] = await Promise.all([
     crypto.subtle.digest("SHA-256", enc.encode(String(a))),
     crypto.subtle.digest("SHA-256", enc.encode(String(b))),
   ]);
-  const x = new Uint8Array(aa), y = new Uint8Array(bb);
+
+  const x = new Uint8Array(aa);
+  const y = new Uint8Array(bb);
+
   let d = 0;
-  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i];
+  for (let i = 0; i < x.length; i++) {
+    d |= x[i] ^ y[i];
+  }
+
   return d === 0;
 }
 
 function b64(bytes) {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+  return btoa(s)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 function unb64(s) {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
+
   while (s.length % 4) s += "=";
-  const raw = atob(s), out = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+
+  const raw = atob(s);
+  const out = new Uint8Array(raw.length);
+
+  for (let i = 0; i < raw.length; i++) {
+    out[i] = raw.charCodeAt(i);
+  }
+
   return out;
 }
 
 function esc(v) {
-  return String(v).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  return String(v).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   }[c]));
 }
