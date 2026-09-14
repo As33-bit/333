@@ -352,10 +352,78 @@ body.light .nav-item.active{color:white}
 .legend-reconcile{background:#5b8cff}
 .legend-adjust{background:#44d7b6}
 .chart{
+  position:relative;
   height:260px;
   border-top:1px solid var(--border);
   border-bottom:1px solid var(--border);
   padding:10px 0 0;
+}
+
+.chart-tooltip{
+  position:absolute;
+  z-index:20;
+  min-width:132px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--panel-strong);
+  color:var(--text);
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+  pointer-events:none;
+  transform:translate(-50%,-100%);
+  font-size:12px;
+  line-height:1.55;
+}
+.chart-tooltip strong{display:block;margin-bottom:3px;font-size:13px}
+.chart-tooltip-row{display:flex;justify-content:space-between;gap:14px;white-space:nowrap}
+.chart-tooltip-row span:first-child{color:var(--muted)}
+.trend-hover-zone{fill:transparent;pointer-events:all;cursor:crosshair}
+
+.query-situation{min-height:230px}
+.query-pie-layout{
+  min-height:230px;
+  display:grid;
+  grid-template-columns:minmax(150px,190px) 1fr;
+  gap:20px;
+  align-items:center;
+}
+.query-pie{
+  width:170px;
+  height:170px;
+  margin:auto;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  box-shadow:inset 0 0 0 1px var(--border);
+}
+.query-pie-center{
+  width:104px;
+  height:104px;
+  border-radius:50%;
+  display:grid;
+  place-content:center;
+  text-align:center;
+  background:var(--panel-strong);
+  box-shadow:0 0 0 1px var(--border);
+}
+.query-pie-center strong{font-size:24px;line-height:1.1}
+.query-pie-center span{margin-top:4px;color:var(--muted);font-size:11px}
+.query-pie-legend{
+  max-height:220px;
+  overflow:auto;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px 14px;
+  padding-right:4px;
+}
+.query-pie-item{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px}
+.query-pie-dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+.query-pie-name{font-weight:700;min-width:30px}
+.query-pie-count{margin-left:auto;color:var(--muted);white-space:nowrap}
+.query-empty{height:230px;display:grid;place-items:center;color:var(--muted);font-size:13px}
+@media(max-width:760px){
+  .query-pie-layout{grid-template-columns:1fr}
+  .query-pie-legend{grid-template-columns:repeat(3,minmax(0,1fr));max-height:none}
 }
 .chart svg{
   width:100%;
@@ -614,13 +682,14 @@ th{color:var(--muted);font-weight:600}
             <span class="legend-item"><span class="legend-dot legend-adjust"></span>當日補帳數</span>
           </div>
         </div>
-        <div class="chart">
+        <div class="chart" id="trendChartWrap">
           <svg id="trendChart" viewBox="0 0 760 250" preserveAspectRatio="none" aria-label="最近7日核對趨勢"></svg>
+          <div id="trendTooltip" class="chart-tooltip hidden"></div>
         </div>
       </div>
       <div class="panel">
-        <h3>核對狀態</h3>
-        <div class="empty-status"></div>
+        <h3>查詢情況</h3>
+        <div id="querySituation" class="query-situation"></div>
       </div>
     </div>
 
@@ -767,8 +836,10 @@ function viaDateKey(date = new Date()){
 const VIA_STATS_SUPABASE_URL = 'https://pqraknjtxyruvswgrlwg.supabase.co';
 const VIA_STATS_SUPABASE_KEY = 'sb_publishable_FcGKft63Ke2d0pnaXSoS7Q_4W1chpvp';
 const VIA_STATS_TABLE = VIA_STATS_SUPABASE_URL + '/rest/v1/via_daily_stats';
+const VIA_PLATFORM_STATS_TABLE = VIA_STATS_SUPABASE_URL + '/rest/v1/via_platform_daily_stats';
 const VIA_STATS_RPC = VIA_STATS_SUPABASE_URL + '/rest/v1/rpc/';
 let viaStatsHistory = {};
+let viaPlatformTotals = {};
 let viaLastRestart = {time:'', status:''};
 
 async function viaStatsRequest(method, url, body){
@@ -791,6 +862,92 @@ async function viaStatsRequest(method, url, body){
   if(res.status === 204) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+async function loadViaPlatformStats(){
+  try {
+    const rows = await viaStatsRequest(
+      'GET',
+      VIA_PLATFORM_STATS_TABLE + '?select=platform,query_count&order=platform.asc'
+    );
+
+    viaPlatformTotals = {};
+    (rows || []).forEach(row => {
+      const platform = String(row.platform || '').trim().toUpperCase();
+      if(!platform) return;
+      viaPlatformTotals[platform] = Number(viaPlatformTotals[platform] || 0) + Number(row.query_count || 0);
+    });
+    renderQuerySituation();
+  } catch(err) {
+    console.error('讀取平台查詢統計失敗', err);
+    const box = document.getElementById('querySituation');
+    if(box) box.innerHTML = '<div class="query-empty">平台查詢統計尚未建立</div>';
+  }
+}
+
+async function addPlatformQueries(platforms){
+  const list = Array.from(new Set((Array.isArray(platforms) ? platforms : [])
+    .map(v => String(v || '').trim().toUpperCase())
+    .filter(Boolean)));
+  if(!list.length) return;
+  try {
+    await viaStatsRequest('POST', VIA_STATS_RPC + 'via_increment_platform_queries', {
+      p_date:viaDateKey(),
+      p_platforms:list
+    });
+    await loadViaPlatformStats();
+  } catch(err) {
+    console.error('寫入平台查詢統計失敗', err);
+  }
+}
+
+function renderQuerySituation(){
+  const box = document.getElementById('querySituation');
+  if(!box) return;
+
+  const entries = Object.entries(viaPlatformTotals || {})
+    .map(([platform,count]) => [platform, Number(count || 0)])
+    .filter(([,count]) => count > 0)
+    .sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  const total = entries.reduce((sum, [,count]) => sum + count, 0);
+  if(!total){
+    box.innerHTML = '<div class="query-empty">尚無平台查詢資料</div>';
+    return;
+  }
+
+  const colors = [
+    '#5b8cff','#44d7b6','#f1bb55','#ff6b7d','#8d7dff','#3dc7ee',
+    '#ff9f43','#62d26f','#cf6cff','#26a69a','#e76f51','#70a1ff',
+    '#ffd166','#06d6a0','#ef476f','#9b5de5','#4cc9f0','#90be6d'
+  ];
+
+  let acc = 0;
+  const parts = entries.map(([,count], index) => {
+    const start = acc;
+    acc += count / total * 100;
+    return `${colors[index % colors.length]} ${start.toFixed(4)}% ${acc.toFixed(4)}%`;
+  });
+
+  const legend = entries.map(([platform,count], index) => `
+    <div class="query-pie-item" title="${platform}：${count.toLocaleString()} 次">
+      <span class="query-pie-dot" style="background:${colors[index % colors.length]}"></span>
+      <span class="query-pie-name">${platform}</span>
+      <span class="query-pie-count">${count.toLocaleString()}</span>
+    </div>
+  `).join('');
+
+  box.innerHTML = `
+    <div class="query-pie-layout">
+      <div class="query-pie" style="background:conic-gradient(${parts.join(',')})">
+        <div class="query-pie-center">
+          <strong>${total.toLocaleString()}</strong>
+          <span>查詢次數</span>
+        </div>
+      </div>
+      <div class="query-pie-legend">${legend}</div>
+    </div>
+  `;
 }
 
 function getHistory(){
@@ -842,6 +999,7 @@ async function loadViaStats(){
 
 function initViaCounters(){
   loadViaStats();
+  loadViaPlatformStats();
 }
 
 function renderViaCounters(){
@@ -914,6 +1072,8 @@ function getLast7Days(){
 
 function renderTrendChart(){
   const svg = document.getElementById('trendChart');
+  const wrap = document.getElementById('trendChartWrap');
+  const tooltip = document.getElementById('trendTooltip');
   if(!svg) return;
 
   const history = getHistory();
@@ -950,13 +1110,53 @@ function renderTrendChart(){
   out += `<polyline class="chart-line-adjust" points="${polyline(adjustments)}"></polyline>`;
 
   reconcile.forEach((v,i)=>{
-    out += `<circle class="chart-point-reconcile" cx="${x(i)}" cy="${y(v)}" r="4"><title>${days[i].label} 當日核對平台數：${v}</title></circle>`;
+    out += `<circle class="chart-point-reconcile" cx="${x(i)}" cy="${y(v)}" r="4"></circle>`;
   });
   adjustments.forEach((v,i)=>{
-    out += `<circle class="chart-point-adjust" cx="${x(i)}" cy="${y(v)}" r="4"><title>${days[i].label} 當日補帳數：${v}</title></circle>`;
+    out += `<circle class="chart-point-adjust" cx="${x(i)}" cy="${y(v)}" r="4"></circle>`;
+  });
+
+  // 每個日期使用一整條透明感應區，因此滑到日期文字、線段附近都能顯示當日數值。
+  days.forEach((d,i)=>{
+    const prev = i === 0 ? left : (x(i-1) + x(i)) / 2;
+    const next = i === days.length-1 ? W-right : (x(i) + x(i+1)) / 2;
+    out += `<rect class="trend-hover-zone" data-index="${i}" x="${prev}" y="0" width="${Math.max(1,next-prev)}" height="${H}"></rect>`;
   });
 
   svg.innerHTML = out;
+
+  const hideTooltip = () => {
+    if(tooltip) tooltip.classList.add('hidden');
+  };
+
+  const showTooltip = (event, index) => {
+    if(!tooltip || !wrap || !days[index]) return;
+    tooltip.innerHTML = `
+      <strong>${days[index].label}</strong>
+      <div class="chart-tooltip-row"><span>查詢數：</span><b>${reconcile[index].toLocaleString()}</b></div>
+      <div class="chart-tooltip-row"><span>補帳數：</span><b>${adjustments[index].toLocaleString()}</b></div>
+    `;
+    tooltip.classList.remove('hidden');
+
+    const rect = wrap.getBoundingClientRect();
+    let leftPx = event.clientX - rect.left;
+    let topPx = event.clientY - rect.top - 10;
+    const tipWidth = tooltip.offsetWidth || 140;
+    const half = tipWidth / 2 + 6;
+    leftPx = Math.max(half, Math.min(rect.width - half, leftPx));
+    topPx = Math.max(72, topPx);
+    tooltip.style.left = `${leftPx}px`;
+    tooltip.style.top = `${topPx}px`;
+  };
+
+  svg.querySelectorAll('.trend-hover-zone').forEach(zone => {
+    const index = Number(zone.dataset.index || 0);
+    zone.addEventListener('mouseenter', event => showTooltip(event, index));
+    zone.addEventListener('mousemove', event => showTooltip(event, index));
+    zone.addEventListener('mouseleave', hideTooltip);
+  });
+
+  svg.addEventListener('mouseleave', hideTooltip, {once:true});
 }
 
 async function setLastRestartRecord(timeText, statusText='已重啟'){
@@ -1012,6 +1212,7 @@ window.addEventListener('message', (event) => {
 
   if(data.type === 'reconcile-platforms') {
     addReconcilePlatforms(Number(data.count || 0));
+    addPlatformQueries(Array.isArray(data.platforms) ? data.platforms : []);
   }
 
   if(data.type === 'adjustment-success') {
