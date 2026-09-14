@@ -275,6 +275,13 @@ body.light .nav-item.active{color:white}
   font-size:13px;
 }
 .video-modal-body{background:#000}
+.video-load-error{
+  padding:14px 16px;
+  background:#fff3cd;
+  color:#7a5400;
+  font-size:13px;
+  border-top:1px solid rgba(0,0,0,.08);
+}
 .video-modal-body video{
   display:block;
   width:100%;
@@ -564,7 +571,7 @@ th{color:var(--muted);font-weight:600}
 
   <main class="main">
     <div class="utility-bar">
-      <button class="video-download-btn" type="button" onclick="openHelpVideo()">使用方式影片</button>
+      <button id="helpVideoBtn" class="video-download-btn hidden" type="button" onclick="openHelpVideo()">使用方式影片</button>
       <div class="theme-toggle">
         <button id="lightBtn" onclick="setTheme('light')">☀ 淺色</button>
         <button id="darkBtn" onclick="setTheme('dark')" class="on">☾ 深色</button>
@@ -649,9 +656,12 @@ th{color:var(--muted);font-weight:600}
     </div>
     <div class="video-modal-body">
       <video id="helpVideoPlayer" controls preload="metadata" playsinline>
-        <source src="./video/VIA_財務核對餘額_使用方式.mp4" type="video/mp4">
+        <source src="./video/via_guide.mp4" type="video/mp4">
         您的瀏覽器不支援影片播放。
       </video>
+      <div id="helpVideoError" class="video-load-error hidden">
+        影片尚未載入，請確認 GitHub 的 <b>video/via_guide.mp4</b> 已存在並完成 Cloudflare 部署。
+      </div>
     </div>
   </div>
 </div>
@@ -677,11 +687,24 @@ function setTheme(theme){
 function openHelpVideo(){
   const modal = document.getElementById('helpVideoModal');
   const player = document.getElementById('helpVideoPlayer');
+  const errorBox = document.getElementById('helpVideoError');
   if(!modal || !player) return;
+
+  if(errorBox) errorBox.classList.add('hidden');
   modal.classList.add('show');
   modal.setAttribute('aria-hidden','false');
   player.currentTime = 0;
-  player.play().catch(()=>{});
+  player.load();
+
+  const tryPlay = () => {
+    player.play().catch(()=>{});
+  };
+
+  if(player.readyState >= 2){
+    tryPlay();
+  }else{
+    player.addEventListener('canplay', tryPlay, {once:true});
+  }
 }
 
 function closeHelpVideo(){
@@ -703,6 +726,17 @@ document.addEventListener('click', e=>{
   if(modal && e.target === modal) closeHelpVideo();
 });
 
+document.addEventListener('DOMContentLoaded', ()=>{
+  const player = document.getElementById('helpVideoPlayer');
+  const errorBox = document.getElementById('helpVideoError');
+
+  if(player){
+    player.addEventListener('error', ()=>{
+      if(errorBox) errorBox.classList.remove('hidden');
+    });
+  }
+});
+
 function logout(){
   window.location.href = '/logout';
 }
@@ -710,8 +744,11 @@ function logout(){
 function showPage(page, btn){
   const home = document.getElementById('homePage');
   const balance = document.getElementById('balancePage');
+  const helpVideoBtn = document.getElementById('helpVideoBtn');
+
   if(home) home.classList.toggle('hidden', page !== 'home');
   if(balance) balance.classList.toggle('hidden', page !== 'balance');
+  if(helpVideoBtn) helpVideoBtn.classList.toggle('hidden', page !== 'balance');
 
   if(page === 'balance'){
     loadFinancePage();
