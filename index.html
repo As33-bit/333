@@ -573,6 +573,117 @@ th{color:var(--muted);font-weight:600}
   display:block;
   background:transparent;
 }
+
+
+/* 出款失敗補回套件 */
+.cow-kit-page{
+  display:grid;
+  gap:14px;
+}
+.cow-kit-hero{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  width:100%;
+}
+.cow-kit-card{
+  width:100%;
+  border:1px solid var(--border);
+  background:var(--panel);
+  border-radius:18px;
+  padding:22px;
+  box-shadow:var(--shadow);
+}
+.cow-kit-card h2,
+.cow-kit-card h3{
+  margin:0 0 10px;
+}
+.cow-kit-card p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.7;
+}
+.cow-kit-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:18px 0;
+}
+.cow-kit-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+  color:var(--text);
+  font-size:12px;
+}
+.cow-kit-download{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:44px;
+  padding:0 18px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(90deg,var(--accent),#4969ee,var(--accent2));
+  color:#fff;
+  font-weight:800;
+  text-decoration:none;
+  box-shadow:0 10px 28px rgba(64,106,255,.24);
+}
+.cow-kit-download:hover{filter:brightness(1.06)}
+.cow-kit-path{
+  margin-top:12px;
+  font-size:12px;
+  color:var(--muted);
+  word-break:break-all;
+}
+.cow-kit-video-wrap{
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#000;
+}
+.cow-kit-video-wrap video{
+  display:block;
+  width:100%;
+  max-height:560px;
+  background:#000;
+}
+.cow-kit-note{
+  margin-top:10px!important;
+  font-size:12px;
+}
+.cow-kit-upload-list{
+  display:grid;
+  gap:10px;
+  margin-top:16px;
+}
+.cow-kit-upload-row{
+  display:grid;
+  grid-template-columns:130px 1fr;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(255,255,255,.025);
+  font-size:13px;
+}
+.cow-kit-upload-row strong{color:var(--text)}
+.cow-kit-upload-row code{color:var(--muted);word-break:break-all}
+@media(max-width:900px){
+  .cow-kit-hero{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .cow-kit-card{padding:16px}
+  .cow-kit-upload-row{grid-template-columns:1fr}
+  .cow-kit-download{width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -607,14 +718,16 @@ th{color:var(--muted);font-weight:600}
         <span>財務核對餘額</span>
       </button>
 
-      <button class="nav-item disabled">
+      <button class="nav-item" onclick="showPage('cowKit', this)">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24">
             <path d="M3.5 7.5h6l2 2h9v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"></path>
             <path d="M3.5 7.5v-1a2 2 0 0 1 2-2h4l2 2h4"></path>
+            <path d="M12 11v6"></path>
+            <path d="m9.5 14.5 2.5 2.5 2.5-2.5"></path>
           </svg>
         </span>
-        <span>功能 3</span>
+        <span>出款失敗補回套件</span>
       </button>
 
       <button class="nav-item disabled">
@@ -770,6 +883,52 @@ th{color:var(--muted);font-weight:600}
         <iframe id="financeBalanceFrame" title="財務核對餘額"></iframe>
       </div>
     </section>
+
+    <section id="cowKitPage" class="hidden cow-kit-page">
+      <p class="section-title">出款失敗補回套件</p>
+
+      <div class="cow-kit-hero">
+        <div class="cow-kit-card">
+          <h2>出款失敗補回套件</h2>
+          <p>下載新版 Chrome 擴充套件</p>
+          <div class="cow-kit-guide" style="margin-top:12px;color:var(--muted);line-height:1.8">
+            <div><strong style="color:var(--text)">1.新增Chrome 擴充套件：</strong>「扩充功能」→「管理扩充功能」→「开发人员模式」→「載入未封裝項目」安裝→安裝选资料夹「COW_Extension」</div>
+            <div style="margin-top:10px"><strong style="color:var(--text)">2.呼叫Chrome 擴充套件：</strong>回到网页VIA管理中心→浏览器右上「扩充功能」→将COW_Extensio「钉选」→开启COW_Extensio</div>
+            <div style="margin-top:10px"><strong style="color:var(--text)">3.使用方式：</strong>点查询→点操作</div>
+            <div style="margin-top:6px"><strong style="color:var(--text)">查询格式</strong></div>
+            <pre style="margin:6px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.035);color:var(--text);font:13px/1.6 Consolas,'Courier New',monospace;white-space:pre-wrap">YS WKRF_500827 tg3355
+补回650
+或
+9/10
+RF	WKRL_77638 zd16888
+补回176</pre>
+            <div style="margin-top:10px"><strong style="color:var(--text)">4.功能介绍：</strong></div>
+            <div>查询：1.查询四方+MS 2.计算 金额+手续费</div>
+            <div>补回：1.MS作帐 2.四方填写 3.平台填写</div>
+            <div>验证码：需要人工填写验证码</div>
+          </div>
+          <div class="cow-kit-meta">
+            <span class="cow-kit-chip">最新版 v0.3.5</span>
+            <span class="cow-kit-chip">支持 GOOGLE Chrome</span>
+          </div>
+          <a class="cow-kit-download" href="./downloads/COW_Extension_DY_Test_v0.3.5.zip" download>
+            ↓ 下載出款失敗補回套件
+          </a>
+        </div>
+
+      </div>
+
+      <div class="cow-kit-card">
+        <h3>出款失败补回套件 使用方式影片</h3>
+        <div class="cow-kit-video-wrap">
+          <video id="cowKitVideo" controls preload="metadata" playsinline>
+            <source src="./video/cow_extension_guide.mp4" type="video/mp4">
+            您的瀏覽器不支援影片播放。
+          </video>
+        </div>
+      </div>
+    </section>
+
   </main>
 </section>
 
@@ -869,10 +1028,12 @@ function logout(){
 function showPage(page, btn){
   const home = document.getElementById('homePage');
   const balance = document.getElementById('balancePage');
+  const cowKit = document.getElementById('cowKitPage');
   const helpVideoBtn = document.getElementById('helpVideoBtn');
 
   if(home) home.classList.toggle('hidden', page !== 'home');
   if(balance) balance.classList.toggle('hidden', page !== 'balance');
+  if(cowKit) cowKit.classList.toggle('hidden', page !== 'cowKit');
   if(helpVideoBtn) helpVideoBtn.classList.toggle('hidden', page !== 'balance');
 
   if(page === 'balance'){
