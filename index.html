@@ -157,9 +157,46 @@ body.light .brand .logo{
   border-right:1px solid var(--border);
   background:rgba(8,22,38,.56);
   backdrop-filter:blur(22px);
+  transition:padding .22s ease;
 }
 body.light .sidebar{background:rgba(239,246,255,.68)}
-.side-brand{padding:4px 14px 28px}
+.side-brand{
+  padding:4px 14px 28px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+.side-brand-copy{min-width:0}
+.sidebar-collapse-btn{
+  width:30px;height:30px;flex:0 0 30px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--panel);
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+  padding:0;
+  transition:.2s ease;
+}
+.sidebar-collapse-btn:hover{color:var(--text);border-color:rgba(91,140,255,.55)}
+.sidebar-collapse-btn svg{
+  width:16px;height:16px;
+  stroke:currentColor;fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+  transition:transform .22s ease;
+}
+
+.app.sidebar-collapsed{grid-template-columns:84px 1fr}
+.app.sidebar-collapsed .sidebar{padding:26px 12px}
+.app.sidebar-collapsed .side-brand{padding:4px 7px 28px;justify-content:center}
+.app.sidebar-collapsed .side-brand-copy{display:none}
+.app.sidebar-collapsed .sidebar-collapse-btn svg{transform:rotate(180deg)}
+.app.sidebar-collapsed .nav-item{justify-content:center;padding:13px 8px}
+.app.sidebar-collapsed .nav-item > span:not(.icon){display:none}
+.app.sidebar-collapsed .side-user{justify-content:center}
+.app.sidebar-collapsed .side-user .user-meta,
+.app.sidebar-collapsed .side-user > span:last-child{display:none}
 .side-brand strong{font-size:34px;letter-spacing:.12em}
 .side-brand div{margin-top:8px;color:var(--muted);font-size:13px}
 .nav{display:grid;gap:8px}
@@ -508,9 +545,9 @@ th{color:var(--muted);font-weight:600}
 @media(max-width:980px){
   .app{grid-template-columns:84px 1fr}
   .sidebar{padding:24px 12px}
-  .side-brand div,.nav-item span,.user-meta{display:none}
-  .side-brand{padding-left:7px}
-  .side-brand strong{font-size:24px}
+  .side-brand-copy,.nav-item > span:not(.icon),.user-meta,.side-user > span:last-child{display:none}
+  .side-brand{padding:4px 7px 28px;justify-content:center}
+  .sidebar-collapse-btn{display:none}
   .nav-item{justify-content:center;padding:13px 8px}
   .side-user{justify-content:center}
   .cards{grid-template-columns:repeat(2,1fr)}
@@ -523,7 +560,7 @@ th{color:var(--muted);font-weight:600}
     position:fixed;z-index:10;left:0;right:0;bottom:0;top:auto;height:auto;
     display:flex;align-items:center;padding:8px 10px;border-right:0;border-top:1px solid var(--border)
   }
-  .side-brand,.side-user{display:none}
+  .side-brand,.side-user,.sidebar-collapse-btn{display:none}
   .nav{width:100%;grid-template-columns:repeat(5,1fr)}
   .nav-item{font-size:11px}
   .nav-item span{display:none}
@@ -690,8 +727,15 @@ th{color:var(--muted);font-weight:600}
 <section id="appPage" class="app">
   <aside class="sidebar">
     <div class="side-brand">
-      <strong>VIA</strong>
-      <div>管理中心</div>
+      <div class="side-brand-copy">
+        <strong>VIA</strong>
+        <div>管理中心</div>
+      </div>
+      <button id="sidebarCollapseBtn" class="sidebar-collapse-btn" type="button" onclick="toggleSidebar()" title="收合左側選單" aria-label="收合左側選單">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m14.5 6-6 6 6 6"></path>
+        </svg>
+      </button>
     </div>
 
     <nav class="nav">
@@ -892,7 +936,7 @@ th{color:var(--muted);font-weight:600}
           <h2>出款失敗補回套件</h2>
           <p>下載新版 Chrome 擴充套件</p>
           <div class="cow-kit-guide" style="margin-top:12px;color:var(--muted);line-height:1.8">
-            <div><strong style="color:var(--text)">1.新增Chrome 擴充套件：</strong>「扩充功能」→「管理扩充功能」→「开发人员模式」→「載入未封裝項目」安裝→安裝选资料夹「COW_Extension」</div>
+            <div><strong style="color:var(--text)">1.新增Chrome 擴充套件：</strong>GOOGLE浏览器→右上选单「‧ ‧ ‧」→「扩充功能」→「管理扩充功能」→「开发人员模式」→「載入未封裝項目」安裝→安裝选资料夹「COW_Extension」</div>
             <div style="margin-top:10px"><strong style="color:var(--text)">2.呼叫Chrome 擴充套件：</strong>回到网页VIA管理中心→浏览器右上「扩充功能」→将COW_Extensio「钉选」→开启COW_Extensio</div>
             <div style="margin-top:10px"><strong style="color:var(--text)">3.使用方式：</strong>点查询→点操作</div>
             <div style="margin-top:6px"><strong style="color:var(--text)">查询格式</strong></div>
@@ -1011,6 +1055,7 @@ document.addEventListener('click', e=>{
 });
 
 document.addEventListener('DOMContentLoaded', ()=>{
+  applySavedSidebarState();
   const player = document.getElementById('helpVideoPlayer');
   const errorBox = document.getElementById('helpVideoError');
 
@@ -1020,6 +1065,33 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
   }
 });
+
+function applySavedSidebarState(){
+  if(window.innerWidth <= 980) return;
+  const collapsed = localStorage.getItem('via-sidebar-collapsed') === '1';
+  const app = document.getElementById('appPage');
+  const btn = document.getElementById('sidebarCollapseBtn');
+  if(!app) return;
+  app.classList.toggle('sidebar-collapsed', collapsed);
+  if(btn){
+    btn.title = collapsed ? '展開左側選單' : '收合左側選單';
+    btn.setAttribute('aria-label', collapsed ? '展開左側選單' : '收合左側選單');
+  }
+}
+
+function toggleSidebar(){
+  if(window.innerWidth <= 980) return;
+  const app = document.getElementById('appPage');
+  const btn = document.getElementById('sidebarCollapseBtn');
+  if(!app) return;
+  const collapsed = !app.classList.contains('sidebar-collapsed');
+  app.classList.toggle('sidebar-collapsed', collapsed);
+  localStorage.setItem('via-sidebar-collapsed', collapsed ? '1' : '0');
+  if(btn){
+    btn.title = collapsed ? '展開左側選單' : '收合左側選單';
+    btn.setAttribute('aria-label', collapsed ? '展開左側選單' : '收合左側選單');
+  }
+}
 
 function logout(){
   window.location.href = '/logout';
