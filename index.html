@@ -1180,6 +1180,7 @@ async function loadViaPlatformStats(){
       viaPlatformTotals[platform] = Number(viaPlatformTotals[platform] || 0) + Number(row.query_count || 0);
     });
     renderQuerySituation();
+    renderViaCounters();
   } catch(err) {
     console.error('讀取平台查詢統計失敗', err);
     const box = document.getElementById('querySituation');
@@ -1479,10 +1480,13 @@ function renderViaCounters(){
   const today = viaDateKey();
   const todayData = history[today] || {reconcile:0, adjustments:0};
 
-  let totalReconcile = 0;
+  // 「核对平台数」与右侧圆饼图统一使用同一份平台查询统计。
+  // 两边都等于 via_platform_daily_stats 各平台 query_count 的累计总和。
+  const totalReconcile = Object.values(viaPlatformTotals || {})
+    .reduce((sum, count) => sum + Number(count || 0), 0);
+
   let totalAdjustments = 0;
   Object.values(history).forEach(item => {
-    totalReconcile += Number(item?.reconcile || 0);
     totalAdjustments += Number(item?.adjustments || 0);
   });
 
