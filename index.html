@@ -805,6 +805,31 @@ th{color:var(--muted);font-weight:600}
   color:var(--muted);
 }
 
+
+.log-more-row{
+  display:flex;
+  justify-content:center;
+  padding:10px 0 2px;
+}
+.log-more-btn{
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  border-radius:8px;
+  padding:6px 16px;
+  font-size:12px;
+  cursor:pointer;
+}
+.log-more-btn:hover{
+  background:rgba(255,255,255,.08);
+}
+.log-more-btn.hidden{
+  display:none;
+}
+.log-collapsed-hidden{
+  display:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -1070,6 +1095,11 @@ th{color:var(--muted);font-weight:600}
             <tr><td colspan="3" style="text-align:center;color:var(--muted)">最近 8 小時尚無查詢記錄</td></tr>
           </tbody>
         </table>
+          <div class="log-more-row">
+            <button id="queryLogToggleBtn" class="log-more-btn hidden" type="button"
+              onclick="toggleLogRows('queryLogBody','queryLogToggleBtn')">查看全部</button>
+          </div>
+
       </div>
 <div class="panel adjust-log-panel">
         <h3>补帐日志 <span class="log-window-note">最近 8 小时</span></h3>
@@ -1096,6 +1126,11 @@ th{color:var(--muted);font-weight:600}
             <tr><td colspan="5" style="text-align:center;color:var(--muted)">最近 8 小时尚无补帐记录</td></tr>
           </tbody>
         </table>
+          <div class="log-more-row">
+            <button id="adjustLogToggleBtn" class="log-more-btn hidden" type="button"
+              onclick="toggleLogRows('adjustLogBody','adjustLogToggleBtn')">查看全部</button>
+          </div>
+
       </div>
     </section>
 
@@ -2083,6 +2118,11 @@ function sortLogTable(tbodyId, columnIndex, headEl){
       if(row && row.parentNode === tbody) tbody.appendChild(row);
     });
     headEl.removeAttribute('data-dir');
+    if(tbodyId === 'queryLogBody'){
+      applyLogRowLimit(tbodyId, 'queryLogToggleBtn');
+    }else if(tbodyId === 'adjustLogBody'){
+      applyLogRowLimit(tbodyId, 'adjustLogToggleBtn');
+    }
     return;
   }
 
@@ -2100,6 +2140,11 @@ function sortLogTable(tbodyId, columnIndex, headEl){
 
   rows.forEach(row=>tbody.appendChild(row));
   headEl.setAttribute('data-dir', next);
+  if(tbodyId === 'queryLogBody'){
+    applyLogRowLimit(tbodyId, 'queryLogToggleBtn');
+  }else if(tbodyId === 'adjustLogBody'){
+    applyLogRowLimit(tbodyId, 'adjustLogToggleBtn');
+  }
 }
 
 
@@ -2227,6 +2272,7 @@ async function loadViaQueryLogs(){
     if(!Array.isArray(rows) || !rows.length){
       tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted)">最近 8 小時尚無查詢記錄</td></tr>';
       tbody._originalRows = Array.from(tbody.querySelectorAll('tr'));
+      applyLogRowLimit('queryLogBody', 'queryLogToggleBtn', false);
       return;
     }
 
@@ -2239,6 +2285,7 @@ async function loadViaQueryLogs(){
     `).join('');
 
     tbody._originalRows = Array.from(tbody.querySelectorAll('tr'));
+    applyLogRowLimit('queryLogBody', 'queryLogToggleBtn', false);
   }catch(error){
     console.error('[VIA] load query logs failed', error);
     tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#d93025">查詢紀錄讀取失敗</td></tr>';
@@ -2316,6 +2363,7 @@ async function loadViaAdjustmentLogs(){
     if(!Array.isArray(rows) || !rows.length){
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">最近 8 小时尚无补帐记录</td></tr>';
       tbody._originalRows = Array.from(tbody.querySelectorAll('tr'));
+      applyLogRowLimit('adjustLogBody', 'adjustLogToggleBtn', false);
       return;
     }
 
@@ -2334,6 +2382,7 @@ async function loadViaAdjustmentLogs(){
     }).join('');
 
     tbody._originalRows = Array.from(tbody.querySelectorAll('tr'));
+    applyLogRowLimit('adjustLogBody', 'adjustLogToggleBtn', false);
   }catch(error){
     console.error('[VIA] load adjustment logs failed', error);
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#d93025">补帐日志读取失败</td></tr>';
@@ -2357,6 +2406,54 @@ window.addEventListener('message', async (event)=>{
     console.error('[VIA] write adjustment log failed', error);
   }
 });
+
+
+
+const LOG_DEFAULT_VISIBLE_COUNT = 14;
+
+function applyLogRowLimit(tbodyId, buttonId, forceExpanded){
+  const tbody = document.getElementById(tbodyId);
+  const button = document.getElementById(buttonId);
+  if(!tbody || !button) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr')).filter(row =>
+    !row.querySelector('td[colspan]')
+  );
+
+  const expanded = forceExpanded !== undefined
+    ? !!forceExpanded
+    : tbody.dataset.expanded === 'true';
+
+  tbody.dataset.expanded = expanded ? 'true' : 'false';
+
+  rows.forEach((row, index)=>{
+    row.classList.toggle(
+      'log-collapsed-hidden',
+      !expanded && index >= LOG_DEFAULT_VISIBLE_COUNT
+    );
+  });
+
+  if(rows.length > LOG_DEFAULT_VISIBLE_COUNT){
+    button.classList.remove('hidden');
+    button.textContent = expanded ? '收起' : '查看全部';
+  }else{
+    button.classList.add('hidden');
+    button.textContent = '查看全部';
+    tbody.dataset.expanded = 'false';
+  }
+}
+
+function toggleLogRows(tbodyId, buttonId){
+  const tbody = document.getElementById(tbodyId);
+  if(!tbody) return;
+  const expanded = tbody.dataset.expanded === 'true';
+  applyLogRowLimit(tbodyId, buttonId, !expanded);
+}
+
+function refreshLogRowLimits(){
+  applyLogRowLimit('queryLogBody', 'queryLogToggleBtn', false);
+  applyLogRowLimit('adjustLogBody', 'adjustLogToggleBtn', false);
+}
 
 </script>
 </body>
