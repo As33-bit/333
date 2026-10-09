@@ -797,6 +797,14 @@ th{color:var(--muted);font-weight:600}
 .adjust-log-page .panel.table-panel{
   margin-top:14px;
 }
+
+.log-window-note{
+  margin-left:8px;
+  font-size:11px;
+  font-weight:500;
+  color:var(--muted);
+}
+
 </style>
 </head>
 <body>
@@ -837,7 +845,7 @@ th{color:var(--muted);font-weight:600}
         </span>
         <span>財務核對餘額</span>
       </button>
-      <button class="nav-subitem" onclick="showPage('adjustLog', this)">補帳紀錄</button>
+      <button class="nav-subitem" onclick="showPage('adjustLog', this)">核對餘額日誌</button>
 
       <button class="nav-item" onclick="showPage('cowKit', this)">
         <span class="icon" aria-hidden="true">
@@ -1045,7 +1053,7 @@ th{color:var(--muted);font-weight:600}
 
       
       <div class="panel table-panel" style="margin-top:14px">
-        <h3>查詢記錄</h3>
+        <h3>查詢記錄 <span class="log-window-note">最近 8 小時</span></h3>
         <table>
           <thead>
             <tr>
@@ -1066,8 +1074,8 @@ th{color:var(--muted);font-weight:600}
       </div>
 
 <div class="adjust-log-head">
-        <p class="adjust-log-title">補帳紀錄</p>
-        <span class="adjust-log-note">版面預覽｜操作者顯示實際作帳帳號</span>
+        <p class="adjust-log-title">核對餘額日誌</p>
+        <span class="adjust-log-note"></span>
       </div>
       <div class="panel adjust-log-panel">
         <table class="adjust-log-table">
@@ -2098,6 +2106,65 @@ function sortLogTable(tbodyId, columnIndex, headEl){
 
   rows.forEach(row=>tbody.appendChild(row));
   headEl.setAttribute('data-dir', next);
+}
+
+
+const LOG_VISIBLE_HOURS = 8;
+
+function isWithinRecentHours(value, hours = LOG_VISIBLE_HOURS){
+  if(!value) return true;
+
+  let d = new Date(value);
+  if(Number.isNaN(d.getTime())){
+    const raw = String(value).trim();
+
+    // 支援 MM/DD HH:mm 或 M/D HH:mm 顯示格式。
+    const m = raw.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if(m){
+      const now = new Date();
+      d = new Date(
+        now.getFullYear(),
+        Number(m[1]) - 1,
+        Number(m[2]),
+        Number(m[3]),
+        Number(m[4]),
+        0,
+        0
+      );
+      // 跨年附近的舊資料修正
+      if(d.getTime() > now.getTime() + 24 * 60 * 60 * 1000){
+        d.setFullYear(d.getFullYear() - 1);
+      }
+    }
+  }
+
+  if(Number.isNaN(d.getTime())) return true;
+  return (Date.now() - d.getTime()) <= hours * 60 * 60 * 1000;
+}
+
+function filterLogRowsToRecentHours(tbodyId, hours = LOG_VISIBLE_HOURS){
+  const tbody = document.getElementById(tbodyId);
+  if(!tbody) return;
+
+  Array.from(tbody.querySelectorAll('tr')).forEach(row=>{
+    const stamp = row.dataset.createdAt || row.children[0]?.textContent?.trim() || '';
+    row.style.display = isWithinRecentHours(stamp, hours) ? '' : 'none';
+  });
+
+  // 重新記錄目前可見的原始順序，讓三段排序第三次能回到「8小時內原順序」。
+  tbody._originalRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+}
+
+function refreshRecentLogWindows(){
+  filterLogRowsToRecentHours('queryLogBody', LOG_VISIBLE_HOURS);
+  filterLogRowsToRecentHours('adjustLogBody', LOG_VISIBLE_HOURS);
+}
+
+document.addEventListener('DOMContentLoaded', refreshRecentLogWindows);
+
+
+function getLogEightHoursAgoIso(){
+  return new Date(Date.now() - LOG_VISIBLE_HOURS * 60 * 60 * 1000).toISOString();
 }
 
 </script>
